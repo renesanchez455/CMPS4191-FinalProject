@@ -27,13 +27,13 @@ type application struct {
 
 func main() {
 	var cfg config
-	// read in the flags that are needed to populate our config
+	// read in the flags that are needed to populate the config
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development | staging | production)")
 	flag.Parse()
 	// Create a logger
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	// Create an instance of our application struct
+	// Create an instance of the application struct
 	app := &application{
 		config: cfg,
 		logger: logger,
@@ -44,7 +44,7 @@ func main() {
 	// Create our HTTP server
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      mux,
+		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
