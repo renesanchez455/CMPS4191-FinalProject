@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,14 +11,26 @@ import (
 
 // createSchoolHandler for the "POST /v1/forums" endpoint
 func (app *application) createForumHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "create a new forum..")
+	// Our target decode destination
+	var input struct {
+		Name    string `json:"name"`
+		Message string `json:"message"`
+	}
+	// Initialize a new json.Decoder instance
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	// Display the request
+	fmt.Fprintf(w, "%+v\n", input)
 }
 
 // showSchoolHandler for the "GET /v1/forums/:id" endpoint
 func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
-		http.NotFound(w, r)
+		app.notFoundResponse(w, r)
 		return
 	}
 
@@ -30,10 +43,9 @@ func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request)
 		Message:   "This is a post about the stock market.",
 		Version:   1,
 	}
-	err = app.writeJSON(w, http.StatusOK, forum, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"forum": forum}, nil)
 	if err != nil {
-		app.logger.Println(err)
-		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
+		app.serverErrorResponse(w, r, err)
 	}
 
 }
