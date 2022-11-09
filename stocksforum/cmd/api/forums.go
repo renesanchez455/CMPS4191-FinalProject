@@ -8,12 +8,12 @@ import (
 	"stocksforum.renesanchez.net/internal/data"
 )
 
-// createSchoolHandler for the "POST /v1/schools" endpoint
+// createSchoolHandler for the "POST /v1/forums" endpoint
 func (app *application) createForumHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "create a new forum..")
 }
 
-// showSchoolHandler for the "GET /v1/schools/:id" endpoint
+// showSchoolHandler for the "GET /v1/forums/:id" endpoint
 func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -21,7 +21,7 @@ func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Create a new instance of the School struct containing the ID we extracted
+	// Create a new instance of the Forum struct containing the ID we extracted
 	// from our URL and some sample data
 	forum := data.Forum{
 		ID:        id,
