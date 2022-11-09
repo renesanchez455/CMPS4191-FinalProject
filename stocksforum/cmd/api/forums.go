@@ -9,7 +9,7 @@ import (
 	"stocksforum.renesanchez.net/internal/data"
 )
 
-// createSchoolHandler for the "POST /v1/forums" endpoint
+// createForumHandler for the "POST /v1/forums" endpoint
 func (app *application) createForumHandler(w http.ResponseWriter, r *http.Request) {
 	// Our target decode destination
 	var input struct {
@@ -26,7 +26,7 @@ func (app *application) createForumHandler(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintf(w, "%+v\n", input)
 }
 
-// showSchoolHandler for the "GET /v1/forums/:id" endpoint
+// showForumHandler for the "GET /v1/forums/:id" endpoint
 func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
