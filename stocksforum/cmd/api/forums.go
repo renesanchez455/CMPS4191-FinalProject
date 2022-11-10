@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"stocksforum.renesanchez.net/internal/data"
+	"stocksforum.renesanchez.net/internal/validator"
 )
 
 // createForumHandler for the "POST /v1/forums" endpoint
@@ -21,6 +22,22 @@ func (app *application) createForumHandler(w http.ResponseWriter, r *http.Reques
 		app.badRequestResponse(w, r, err)
 		return
 	}
+
+	// Copy the values from the input struct to a new Forum struct
+	forum := &data.Forum{
+		Name:    input.Name,
+		Message: input.Message,
+	}
+
+	// Initialize a new Validator instance
+	v := validator.New()
+
+	// Check the map to determine if there were any validation errors
+	if data.ValidateForum(v, forum); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
 	// Display the request
 	fmt.Fprintf(w, "%+v\n", input)
 }
