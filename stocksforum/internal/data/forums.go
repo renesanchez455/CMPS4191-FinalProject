@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"stocksforum.renesanchez.net/internal/validator"
@@ -166,25 +167,28 @@ func (m ForumModel) Delete(id int64) error {
 }
 
 // The GetAll() method retuns a list of all the forums sorted by id
-func (m ForumModel) GetAll(name string, filters Filters) ([]*Forum, error) {
+func (m ForumModel) GetAll(name string, filters Filters) ([]*Forum, Metadata, error) {
 	// Construct the query
-	query := `
-		SELECT id, created_at, name, message,
+	query := fmt.Sprintf(`
+		SELECT COUNT(*) OVER(), id, created_at, name, message,
 		       version
 		FROM forums
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
-		ORDER BY id
-	`
+		ORDER BY %s %s, id ASC
+		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortOrder())
+
 	// Create a 3-second-timout context
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	// Execute the query
-	rows, err := m.DB.QueryContext(ctx, query, name)
+	args := []interface{}{name, filters.limit(), filters.offset()}
+	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 	// Close the resultset
 	defer rows.Close()
+	totalRecords := 0
 	// Initialize an empty slice to hold the Forum data
 	forums := []*Forum{}
 	// Iterate over the rows in the resultset
@@ -192,6 +196,7 @@ func (m ForumModel) GetAll(name string, filters Filters) ([]*Forum, error) {
 		var forum Forum
 		// Scan the values from the row into forum
 		err := rows.Scan(
+			&totalRecords,
 			&forum.ID,
 			&forum.CreatedAt,
 			&forum.Name,
@@ -199,15 +204,16 @@ func (m ForumModel) GetAll(name string, filters Filters) ([]*Forum, error) {
 			&forum.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 		// Add the Forum to our slice
 		forums = append(forums, &forum)
 	}
 	// Check for errors after looping through the resultset
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
 	// Return the slice of Forums
-	return forums, nil
+	return forums, metadata, nil
 }
