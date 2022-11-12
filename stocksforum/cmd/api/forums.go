@@ -83,7 +83,7 @@ func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) updateForumHandler(w http.ResponseWriter, r *http.Request) {
-	// This method does a complete replacement
+	// This method does a partial replacement
 	// Get the id for the forum that needs updating
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -102,10 +102,13 @@ func (app *application) updateForumHandler(w http.ResponseWriter, r *http.Reques
 		}
 		return
 	}
-	// Create an input struct to hold data read in fro mteh client
+	// Create an input struct to hold data read in from the client
+	// We update input struct to use pointers because pointers have a
+	// default value of nil
+	// If a field remains nil then we know that the client did not update it
 	var input struct {
-		Name    string `json:"name"`
-		Message string `json:"message"`
+		Name    *string `json:"name"`
+		Message *string `json:"message"`
 	}
 
 	// Initialize a new json.Decoder instance
@@ -115,10 +118,14 @@ func (app *application) updateForumHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Copy / Update the fields / values in the forum variable using the fields
-	// in the input struct
-	forum.Name = input.Name
-	forum.Message = input.Message
+	// Check for updates
+	if input.Name != nil {
+		forum.Name = *input.Name
+	}
+	if input.Message != nil {
+		forum.Message = *input.Message
+	}
+
 	// Perform validation on the updated Message. If validation fails, then
 	// we send a 422 - Unprocessable Entity respose to the client
 	// Initialize a new Validator instance
@@ -140,6 +147,7 @@ func (app *application) updateForumHandler(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+
 }
 
 func (app *application) deleteForumHandler(w http.ResponseWriter, r *http.Request) {
