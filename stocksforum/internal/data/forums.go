@@ -83,20 +83,33 @@ func (m ForumModel) Get(id int64) (*Forum, error) {
 }
 
 // Update() allows us to edit/alter a specific Forum
+// Optimistic locking (version number)
 func (m ForumModel) Update(forum *Forum) error {
 	// Create the query
 	query := `
 		UPDATE forums
 		SET name = $1, message = $2, version = version + 1
 		WHERE id = $3
+		AND version = $4
 		RETURNING version
 	`
 	args := []interface{}{
 		forum.Name,
 		forum.Message,
 		forum.ID,
+		forum.Version,
 	}
-	return m.DB.QueryRow(query, args...).Scan(&forum.Version)
+	// Check for edit conflicts
+	err := m.DB.QueryRow(query, args...).Scan(&forum.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 // Delete() removes a specific Forum
