@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"stocksforum.renesanchez.net/internal/data"
 	"stocksforum.renesanchez.net/internal/validator"
@@ -62,15 +62,19 @@ func (app *application) showForumHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Create a new instance of the Forum struct containing the ID we extracted
-	// from our URL and some sample data
-	forum := data.Forum{
-		ID:        id,
-		CreatedAt: time.Now(),
-		Name:      "The stock market",
-		Message:   "This is a post about the stock market.",
-		Version:   1,
+	// Fetch the specific forum
+	forum, err := app.models.Forums.Get(id)
+	// Handle errors
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
+
 	err = app.writeJSON(w, http.StatusOK, envelope{"forum": forum}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
