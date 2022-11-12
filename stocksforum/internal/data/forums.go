@@ -172,7 +172,7 @@ func (m ForumModel) GetAll(name string, filters Filters) ([]*Forum, error) {
 		SELECT id, created_at, name, message,
 		       version
 		FROM forums
-		WHERE (LOWER(name) = LOWER($1) OR $1 = '')
+		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		ORDER BY id
 	`
 	// Create a 3-second-timout context
