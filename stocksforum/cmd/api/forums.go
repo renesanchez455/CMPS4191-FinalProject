@@ -209,6 +209,17 @@ func (app *application) listForumsHandler(w http.ResponseWriter, r *http.Request
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-	// Results dump
-	fmt.Fprintf(w, "%+v\n", input)
+
+	// Get a listing of all forums
+	forums, err := app.models.Forums.GetAll(input.Name, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	// Send a JSON response containg all the forums
+	err = app.writeJSON(w, http.StatusOK, envelope{"forums": forums}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 }

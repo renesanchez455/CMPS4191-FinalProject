@@ -164,3 +164,50 @@ func (m ForumModel) Delete(id int64) error {
 	}
 	return nil
 }
+
+// The GetAll() method retuns a list of all the forums sorted by id
+func (m ForumModel) GetAll(name string, filters Filters) ([]*Forum, error) {
+	// Construct the query
+	query := `
+		SELECT id, created_at, name, message,
+		       version
+		FROM forums
+		WHERE (LOWER(name) = LOWER($1) OR $1 = '')
+		ORDER BY id
+	`
+	// Create a 3-second-timout context
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	// Execute the query
+	rows, err := m.DB.QueryContext(ctx, query, name)
+	if err != nil {
+		return nil, err
+	}
+	// Close the resultset
+	defer rows.Close()
+	// Initialize an empty slice to hold the Forum data
+	forums := []*Forum{}
+	// Iterate over the rows in the resultset
+	for rows.Next() {
+		var forum Forum
+		// Scan the values from the row into forum
+		err := rows.Scan(
+			&forum.ID,
+			&forum.CreatedAt,
+			&forum.Name,
+			&forum.Message,
+			&forum.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		// Add the Forum to our slice
+		forums = append(forums, &forum)
+	}
+	// Check for errors after looping through the resultset
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	// Return the slice of Forums
+	return forums, nil
+}
