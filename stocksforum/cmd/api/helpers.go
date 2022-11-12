@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
+	"stocksforum.renesanchez.net/internal/validator"
 )
 
 // Define a new type named envelope
@@ -102,4 +104,33 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		return errors.New("body must only contain a single JSON value")
 	}
 	return nil
+}
+
+// The readString() method returns a string value from the query parameter
+// string or returns a default value if no matching key is found
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	// Get the value
+	value := qs.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+// The readInt() method converts a string value from the query string to an integer value.
+// If the value cannot be converted to an integer then a validation error is added to
+// the validation errors map
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	// Get the value
+	value := qs.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	// Perform the conversion to an integer
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+	return intValue
 }
