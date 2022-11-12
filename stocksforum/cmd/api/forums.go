@@ -141,3 +141,30 @@ func (app *application) updateForumHandler(w http.ResponseWriter, r *http.Reques
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) deleteForumHandler(w http.ResponseWriter, r *http.Request) {
+	// Get the id for the forum that needs updating
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	// Delete the Forum from the database. Send a 404 Not Found status code to the
+	// client if there is no matching record
+	err = app.models.Forums.Delete(id)
+	// Handle errors
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	// Return 200 Status OK to the client with a success message
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "forum successfully deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
